@@ -16,75 +16,75 @@ const int DataPin = 2;
 
 byte Data = 0; 
 
-void shiftWrite(int desiredPin, boolean desiredState)
+void increment()   //LEDs increment start from 0 - 5 
 {
-  bitWrite(Data, desiredPin, desiredState);
- 
-  // Now we'll actually send that data to the shift register
-  // shiftOut() function does all the hard work of
-  // manipulating data and clock pins to move data
-  // into shift register
-  shiftOut(DataPin, ClockPin, MSBFIRST, Data);
+  int PinNo = 0;
+  int Delay = 100; 
+  
+  for(PinNo = 0; PinNo < 4; PinNo++)
+  {
+    shiftWrite(PinNo, HIGH);
+    delay(Delay);                
+  }
+  for(PinNo = 3; PinNo >= 0; PinNo--)
+  {
+    shiftWrite(PinNo, LOW);
+    delay(Delay);                
+  }
+}
 
-  // Once data is in shift register, we still need to
-  // make it appear at the outputs. We'll toggle the state of
-  // latchPin, which will signal shift register to "latch"
-  // data to outputs
-  // latch activates on high-to-low transition
-  digitalWrite(LatchPin, HIGH);
+void OneByOne()  // LEDs Glow one by one from 0 to 5
+{
+  int PinNo = 0;
+  int Delay = 1000; 
+  
+  for(PinNo = 0; PinNo < 8; PinNo++)
+  {
+    shiftWrite(PinNo, HIGH);
+    delay(Delay); 
+    shiftWrite(PinNo, LOW);    
+  }
+  for(PinNo = 7; PinNo >=0 ; PinNo--)
+  {
+    shiftWrite(PinNo, HIGH);
+    delay(Delay); 
+    shiftWrite(PinNo, LOW);    
+  }
+
+}
+
+void shiftWrite(int Pin, boolean State) // Function is similar to digitalWrite 
+{                                       // State-0/1 | Pin - Pin No.
+  bitWrite(Data,Pin,State);             // Making Pin(Bit) 0 or 1
+  shiftOut(DataPin, ClockPin, MSBFIRST, Data); // Data out at DataPin
+  digitalWrite(LatchPin, HIGH);                // Latching Data
   digitalWrite(LatchPin, LOW);
 }
 
-
-void oneOnAtATime()
+void AllHigh()   // sets all High
 {
-  int index;
-  for (index = 0; index <= 7; index++)
+  int PinNo = 0;
+  for(PinNo = 0; PinNo < 8; PinNo++)
   {
-    shiftWrite(index, HIGH);    // turn LED on
-    delay(500);        
-    shiftWrite(index, LOW);    // turn LED off
+   shiftWrite(PinNo, HIGH);  
   }
 }
 
-void oneAfterAnother()
+void AllLow()   // Sets all low
 {
-  int index;
-  // Turn all LEDs on
-  for (index = 0; index <= 7; index++)
+  int PinNo = 0;
+  for(PinNo = 0; PinNo < 8; PinNo++)
   {
-    shiftWrite(index, HIGH);
-    delay(500);                
+   shiftWrite(PinNo, LOW);  
   }
+}
 
-  // Turn all LEDs off
-  for (index = 7; index >= 0; index--)
-  {
-    shiftWrite(index, LOW);
+void SOS(){                  // All LEDs ON and OFF 10 times
+  for (int x=0; x<3; x++){    
+    AllHigh();
     delay(500);
-  }
-}
-
-// Off all LEDs for 5 sec
-void allOff()
-{
-  int index;
-  for (index = 0; index <= 7; index++)
-  {
-    shiftWrite(index, LOW);    // Turn a LED off
-  }
-  delay(500*5);
-}
-
-
-
-// On all LEDs for 5 sec
-void allOn()
-{
-  int index;
-  for (index = 0; index <= 7; index++)
-  {
-    shiftWrite(index, HIGH);    // Turn a LED on
+    AllLow();
+    delay(500);
   }
 }
 
@@ -98,44 +98,28 @@ void setup()
   mySoftwareSerial.begin(9600);
   Serial.begin(115200);
 
-  Serial.println();
-  Serial.println(F("DFRobot DFPlayer Mini Demo"));
-  Serial.println(F("Initializing DFPlayer ... (May take 3~5 seconds)"));
+  // Serial.println();
+  // Serial.println(F("DFRobot DFPlayer Mini Demo"));
+  // Serial.println(F("Initializing DFPlayer ... (May take 3~5 seconds)"));
 
-  if (!myDFPlayer.begin(mySoftwareSerial)) {  //Use softwareSerial to communicate with mp3.
-    Serial.println(F("Unable to begin:"));
-    Serial.println(F("1.Please recheck the connection!"));
-    Serial.println(F("2.Please insert the SD card!"));
-    while(true);
-  }
-  Serial.println(F("DFPlayer Mini online."));
+  // if (!myDFPlayer.begin(mySoftwareSerial)) {  //Use softwareSerial to communicate with mp3.
+  //   Serial.println(F("Unable to begin:"));
+  //   Serial.println(F("1.Please recheck the connection!"));
+  //   Serial.println(F("2.Please insert the SD card!"));
+  //   while(true);
+  // }
+  // Serial.println(F("DFPlayer Mini online."));
 
-  myDFPlayer.volume(25);  //Set volume value. From 0 to 30
+  // myDFPlayer.volume(25);  //Set volume value. From 0 to 30
+  SOS();
+  AllHigh();
 
-  Data = 0;
-
-  for (int i = 0; i < 8; i++)
-  {
-    bitSet(Data, i);
-    updateShiftRegister();
-    delay(300);
-  }
-  updateShiftRegister();
-  // delay(500);
-  
-
-  myDFPlayer.play(5);
-
-  delay(3000);
-
-  allOn();
-
+  //myDFPlayer.play(5);
 }
 
 void loop()
 {
 
-  // myDFPlayer.play(1);
 }
 
 
@@ -144,6 +128,14 @@ void updateShiftRegister()
    digitalWrite(LatchPin, LOW);
    shiftOut(DataPin, ClockPin, LSBFIRST, Data);
    digitalWrite(LatchPin, HIGH);
+}
+
+// this second function is to turn them off
+void updateShiftRegister2() 
+{ 
+   digitalWrite(LatchPin, HIGH);
+   shiftOut(DataPin, ClockPin, LSBFIRST, Data); //if we start with MSBFIRST in this function, then it would start from the most significant, that is the 1st pinout.
+   digitalWrite(LatchPin, LOW);
 }
 
 void printDetail(uint8_t type, int value){
